@@ -184,6 +184,7 @@ public class ATOFDataReader {
 //equivalent TDC version of above code: 
 
 package org.jlab.rec.atof.ATOF_RECON_CLUSTER_BANK;
+
 import org.jlab.jnp.hipo4.data.Bank;
 import org.jlab.jnp.hipo4.data.Event;
 import org.jlab.jnp.hipo4.data.Schema;
@@ -199,6 +200,8 @@ public class ATOFDataReader {
     private static final float DELTA_TIME_THRESHOLD = 2.0f; // ns
     private static final float VEFF = 20.0f; // Effective speed of light in the bar (cm/ns)
     private static final float TDC_RESOLUTION = 0.015625f; // TDC resolution in ns
+    private static final int NUM_WEDGES = 10;
+    private static final float WEDGE_SPACING = 3.0f; // mm
 
     public static void main(String[] args) {
         if (args.length < 3) {
@@ -242,17 +245,14 @@ public class ATOFDataReader {
 
                 recBank.putShort("id", i, (short) i);
                 recBank.putShort("nhits", i, (short) cluster.hits.size());
-                recBank.putFloat("z", i, cluster.z);
-                recBank.putFloat("phi", i, cluster.phi);
+                recBank.putFloat("z", i, cluster.z / cluster.hits.size()); // Averaged Z
+                recBank.putFloat("phi", i, cluster.phi / cluster.hits.size()); // Averaged Phi
                 recBank.putFloat("time", i, cluster.time);
                 recBank.putFloat("energy", i, cluster.energy);
                 recBank.putByte("sector", i, (byte) cluster.sector);
                 recBank.putByte("layer", i, (byte) cluster.layer);
                 recBank.putShort("component", i, (short) cluster.component);
                 recBank.putByte("order", i, (byte) cluster.order);
-                recBank.putFloat("TDC", i, cluster.tdc);
-                recBank.putFloat("ZBar", i, cluster.zBar);
-                recBank.putFloat("ZWedge", i, cluster.zWedge);
                 recBank.putFloat("deltaZ", i, cluster.deltaZ);
                 recBank.putFloat("deltaPhi", i, cluster.deltaPhi);
                 recBank.putFloat("deltaTime", i, cluster.deltaTime);
@@ -281,10 +281,8 @@ public class ATOFDataReader {
             int order = tdcBank.getInt("order", i);
             float tdc = tdcBank.getInt("TDC", i) * TDC_RESOLUTION;
 
-            float z = calculateZ(layer, component, tdc, order);
-            float phi = calculatePhi(component);
-
-            hits.add(new Hit(sector, layer, component, order, tdc, z, phi));
+            Hit hit = identifyHit(sector, layer, component, order, tdc);
+            if (hit != null) hits.add(hit);
         }
 
         for (Hit hit : hits) {
@@ -305,20 +303,44 @@ public class ATOFDataReader {
         return clusters;
     }
 
-    private static float calculateZ(int layer, int component, float time, int order) {
-        if (layer == 0) return VEFF * (order == 0 ? time : -time);
-        return (component % 10 - 4.5f) * 3.0f; // Wedge Z
+    private static Hit identifyHit(int sector, int layer, int component, int order, float tdc) {
+        if (component < 10) {
+            // Wedge hit
+            float z = calculateZWedge(component);
+            float phi = calculatePhiWedge(component);
+            return new Hit(sector, layer, component, order, tdc, z, phi, "wedge");
+        } else if (component == 10) {
+            // Bar hit
+            float z = calculateZBar(order, tdc);
+            float phi = calculatePhiBar(component);
+            return new Hit(sector, layer, component, order, tdc, z, phi, order == 0 ? "bar-left" : "bar-right");
+        }
+        return null; // Invalid hit
     }
 
-    private static float calculatePhi(int component) {
+    private static float calculateZWedge(int component) {
+        int wedgeIndex = component % NUM_WEDGES;
+        return (wedgeIndex - (NUM_WEDGES - 1) / 2.0f) * WEDGE_SPACING;
+    }
+
+    private static float calculatePhiWedge(int component) {
+        return (float) (2.0 * Math.PI * component / NUM_WEDGES);
+    }
+
+    private static float calculateZBar(int order, float tdc) {
+        return VEFF * (order == 0 ? tdc : -tdc);
+    }
+
+    private static float calculatePhiBar(int component) {
         return (float) (2.0 * Math.PI * component / 60.0);
     }
 
     static class Hit {
         int sector, layer, component, order;
         float tdc, z, phi;
+        String type;
 
-        Hit(int sector, int layer, int component, int order, float tdc, float z, float phi) {
+        Hit(int sector, int layer, int component, int order, float tdc, float z, float phi, String type) {
             this.sector = sector;
             this.layer = layer;
             this.component = component;
@@ -326,12 +348,14 @@ public class ATOFDataReader {
             this.tdc = tdc;
             this.z = z;
             this.phi = phi;
+            this.type = type;
         }
     }
 
     static class Cluster {
         List<Hit> hits = new ArrayList<>();
-        float z, phi, time, tdc, energy, zBar, zWedge, deltaZ, deltaPhi, deltaTime;
+        float z = 0, phi = 0, time = Float.MAX_VALUE, energy = 0;
+        float deltaZ = 0, deltaPhi = 0, deltaTime = 0;
         int sector, layer, component, order;
         int barHits = 0, wedgeHits = 0;
 
@@ -341,21 +365,21 @@ public class ATOFDataReader {
 
         void addHit(Hit hit) {
             hits.add(hit);
-            tdc += hit.tdc;
-            energy += hit.tdc * 0.1f;
             z += hit.z;
             phi += hit.phi;
             time = Math.min(time, hit.tdc);
-            if (hit.layer == 0) barHits++;
-            else wedgeHits++;
+            energy += hit.tdc * 0.1f; // Arbitrary energy scaling
+            if (hit.type.contains("bar")) barHits++;
+            else if (hit.type.equals("wedge")) wedgeHits++;
         }
 
         boolean canAddHit(Hit hit) {
-            return Math.abs(hit.z - z) < DELTA_Z_THRESHOLD &&
-                    Math.abs(hit.phi - phi) < DELTA_PHI_THRESHOLD &&
-                    Math.abs(hit.tdc - time) < DELTA_TIME_THRESHOLD;
+            if (hits.isEmpty()) return true;
+            Hit refHit = hits.get(0);
+            return Math.abs(hit.z - refHit.z) < DELTA_Z_THRESHOLD &&
+                    Math.abs(hit.phi - refHit.phi) < DELTA_PHI_THRESHOLD &&
+                    Math.abs(hit.tdc - refHit.tdc) < DELTA_TIME_THRESHOLD;
         }
     }
 }
-
 */

@@ -178,8 +178,8 @@ public class MultiClustering_atof_v0 {
 
 /*
 
-//TDC version 
 
+//TDC version 
 
 package org.jlab.rec.atof.MultiClustering_ATOF_V0;
 
@@ -191,9 +191,9 @@ import java.util.List;
 
 public class MultiClustering_ATOF_TDC {
 
-    private static final double VEFF = 200.0;
-    private static final double BAR_LENGTH = 280.0;
-    private static final double WEDGE_SPACING = 30.0;
+    private static final double VEFF = 200.0; // mm/ns
+    private static final double BAR_LENGTH = 280.0; // mm
+    private static final double WEDGE_SPACING = 30.0; // mm
     private static final int N_WEDGE = 10;
     private static final double Z_THRESHOLD = 200.0;
     private static final double PHI_THRESHOLD = 0.2;
@@ -255,8 +255,8 @@ public class MultiClustering_ATOF_TDC {
                 System.out.printf("  Cluster ID: %d, Event ID: %d -> Z: %.2f mm, Phi: %.2f rad, Time: %.2f ns, Size: %d\n",
                         clusterId++, eventId, cluster.z, cluster.phi, cluster.time, cluster.hits.size());
                 for (Hit hit : cluster.hits) {
-                    String hitType = hit.layer == 0 ? "Bar" : "Wedge";
-                    double zValue = hit.layer == 0 ? cluster.z : hit.z;
+                    String hitType = hit.isBarHit() ? "Bar" : "Wedge";
+                    double zValue = hit.isBarHit() ? cluster.z : hit.z;
                     System.out.printf("    %s Hit ID: %d -> Sector: %d, Layer: %d, Component: %d, Order: %d, TDC: %d, ToT: %d, Z: %.2f mm, Phi: %.2f rad\n",
                             hitType, hit.id, hit.sector, hit.layer, hit.component, hit.order, hit.tdc, hit.tot, zValue, hit.phi);
                 }
@@ -277,12 +277,13 @@ public class MultiClustering_ATOF_TDC {
             int tdc = atofTdcBank.getInt("TDC", i);
             int tot = atofTdcBank.getInt("ToT", i);
             double phi = 2 * Math.PI * component / 60;
-            double z = (layer == 0) ? 0.0 : (component % N_WEDGE - (N_WEDGE - 1) / 2.0) * WEDGE_SPACING;
+            double z = (layer == 0 && component == 10) ? 0.0 : ((component % N_WEDGE) - (N_WEDGE - 1) / 2.0) * WEDGE_SPACING;
             double time = tdc * 0.0244140625; // Convert TDC to ns (example conversion factor)
+
             Hit hit = new Hit(sector, layer, component, order, tdc, tot, z, phi, time);
 
-            if (layer == 0) barHits.add(hit);
-            else wedgeHits.add(hit);
+            if (hit.isBarHit()) barHits.add(hit);
+            else if (hit.isWedgeHit()) wedgeHits.add(hit);
         }
     }
 
@@ -342,6 +343,22 @@ public class MultiClustering_ATOF_TDC {
             this.phi = phi;
             this.time = time;
         }
+
+        boolean isBarHit() {
+            return component == 10;
+        }
+
+        boolean isWedgeHit() {
+            return component < 10;
+        }
+
+        boolean isLeftPMT() {
+            return isBarHit() && order == 0;
+        }
+
+        boolean isRightPMT() {
+            return isBarHit() && order == 1;
+        }
     }
 
     static class Cluster {
@@ -355,5 +372,4 @@ public class MultiClustering_ATOF_TDC {
         }
     }
 }
-
 */

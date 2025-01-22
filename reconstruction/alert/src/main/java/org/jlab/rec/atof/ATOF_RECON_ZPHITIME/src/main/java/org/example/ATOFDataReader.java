@@ -163,8 +163,10 @@ public class ATOFDataReader {
 //equivalen TDC version 
 
 package org.jlab.rec.atof.ATOF_RECON_ZPHITIME;
+
 import org.jlab.jnp.hipo4.data.*;
 import org.jlab.jnp.hipo4.io.HipoReader;
+
 import java.util.*;
 
 public class ATOFDataReader {
@@ -262,11 +264,14 @@ public class ATOFDataReader {
             int tdc = tdcBank.getInt("TDC", i);
             float time = tdc * TDC_RESOLUTION;
 
-            if (layer == 0) barHits.add(new Hit(component, order, time));
-            if (layer >0 && layer <4) {
+            if (component < 10) {
+                // Wedge hit
                 float zWedge = calculateZWedge(component);
                 float phiWedge = calculatePhi(component);
                 wedgeHits.add(new Hit(zWedge, phiWedge, time));
+            } else if (component == 10) {
+                // Bar hit
+                barHits.add(new Hit(component, order, time));
             }
         }
     }
@@ -277,8 +282,8 @@ public class ATOFDataReader {
         List<Hit> zBarHits = new ArrayList<>();
 
         for (Hit hit : barHits) {
-            if (hit.order == 0) tLeft.put(hit.component, hit.time);
-            if (hit.order == 1) tRight.put(hit.component, hit.time);
+            if (hit.order == 0) tLeft.put(hit.component, hit.time); // Left PMT
+            if (hit.order == 1) tRight.put(hit.component, hit.time); // Right PMT
         }
 
         for (int component : tLeft.keySet()) {
@@ -323,9 +328,4 @@ public class ATOFDataReader {
         }
     }
 }
-
 */
-
-
-
-

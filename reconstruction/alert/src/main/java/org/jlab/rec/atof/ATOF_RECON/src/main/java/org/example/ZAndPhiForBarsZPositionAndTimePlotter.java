@@ -2,7 +2,6 @@ package org.jlab.rec.atof.ATOF_RECON;
 import org.jlab.jnp.hipo4.data.Bank;
 import org.jlab.jnp.hipo4.data.Event;
 import org.jlab.jnp.hipo4.io.HipoReader;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -212,20 +211,16 @@ public class ZAndPhiForBarsZPositionAndTimePlotter_TDC {
     private static final double TDC_RESOLUTION = 0.015625; // TDC resolution in ns
 
     private static class EventData {
-        double zWedge;
-        double zBar;
-        double phiWedge;
-        double phiBar;
-        double timeWedge;
-        double timeBar;
+        double z;
+        double phi;
+        double time;
+        String type; // "bar" or "wedge"
 
-        EventData(double zWedge, double zBar, double phiWedge, double phiBar, double timeWedge, double timeBar) {
-            this.zWedge = zWedge;
-            this.zBar = zBar;
-            this.phiWedge = wrapPhi(phiWedge);
-            this.phiBar = wrapPhi(phiBar);
-            this.timeWedge = timeWedge;
-            this.timeBar = timeBar;
+        EventData(double z, double phi, double time, String type) {
+            this.z = z;
+            this.phi = wrapPhi(phi);
+            this.time = time;
+            this.type = type;
         }
     }
 
@@ -247,8 +242,8 @@ public class ZAndPhiForBarsZPositionAndTimePlotter_TDC {
         public void printCluster(int clusterIndex) {
             System.out.printf("Cluster %d - Size: %d\n", clusterIndex, getClusterSize());
             for (EventData event : events) {
-                System.out.printf("  ZW: %.2f, ZB: %.2f, PhiW: %.2f, PhiB: %.2f, TW: %.2f, TB: %.2f\n",
-                        event.zWedge, event.zBar, event.phiWedge, event.phiBar, event.timeWedge, event.timeBar);
+                System.out.printf("  Z: %.2f, Phi: %.2f, Time: %.2f, Type: %s\n",
+                        event.z, event.phi, event.time, event.type);
             }
         }
     }
@@ -287,33 +282,29 @@ public class ZAndPhiForBarsZPositionAndTimePlotter_TDC {
             event.read(atofTdcBank);
 
             int numRows = atofTdcBank.getRows();
-            if (numRows < NUM_WEDGES) continue;
-
             System.out.println("\nProcessing a new event...");
 
-            for (int wedgeIndex = 0; wedgeIndex < NUM_WEDGES; wedgeIndex++) {
-                double wedgeZ = calculateZForWedge(wedgeIndex);
-                int barIndex = calculateBarIndex(atofTdcBank, wedgeIndex);
-                double wedgePhi = calculatePhiForBar(barIndex);
-                double wedgeTime = atofTdcBank.getInt("TDC", wedgeIndex) * TDC_RESOLUTION;
-                double barZ = calculateZForBar(atofTdcBank, wedgeIndex);
-                double barPhi = calculatePhiForBar(barIndex);
-                double barTime = calculateBarTime(atofTdcBank, wedgeIndex);
+            for (int i = 0; i < numRows; i++) {
+                int component = atofTdcBank.getInt("component", i);
+                int order = atofTdcBank.getInt("order", i);
+                double tdcTime = atofTdcBank.getInt("TDC", i) * TDC_RESOLUTION;
 
-                eventsData.add(new EventData(wedgeZ, barZ, wedgePhi, barPhi, wedgeTime, barTime));
-
-                double deltaZ = Math.abs(barZ - wedgeZ);
-                double deltaPhi = Math.abs(barPhi - wedgePhi);
-                double deltaTime = Math.abs(barTime - wedgeTime);
-                System.out.printf("Event %d -> Delta Z: %.2f, Delta Phi: %.4f, Delta Time: %.4f\n", wedgeIndex, deltaZ, deltaPhi, deltaTime);
+                if (component < 10) { // Wedge hit
+                    double zWedge = calculateZForWedge(component);
+                    double phiWedge = calculatePhiForWedge(component);
+                    eventsData.add(new EventData(zWedge, phiWedge, tdcTime, "wedge"));
+                } else if (component == 10) { // Bar hit
+                    double zBar = calculateZForBar(atofTdcBank, i, order);
+                    double phiBar = calculatePhiForBar(component);
+                    eventsData.add(new EventData(zBar, phiBar, tdcTime, "bar"));
+                }
             }
         }
     }
 
-    private static double calculateZForBar(Bank bank, int rowIndex) {
-        double timeLeftPMT = bank.getInt("TDC", rowIndex) * TDC_RESOLUTION;
-        double timeRightPMT = bank.getInt("TDC", rowIndex + 1) * TDC_RESOLUTION;
-        return VELOCITY_EFF * (timeRightPMT - timeLeftPMT) / 2.0;
+    private static double calculateZForBar(Bank bank, int rowIndex, int order) {
+        double timePMT = bank.getInt("TDC", rowIndex) * TDC_RESOLUTION;
+        return order == 0 ? -VELOCITY_EFF * timePMT : VELOCITY_EFF * timePMT;
     }
 
     private static double calculateZForWedge(int wedgeIndex) {
@@ -325,23 +316,15 @@ public class ZAndPhiForBarsZPositionAndTimePlotter_TDC {
         return wrapPhi(phi);
     }
 
+    private static double calculatePhiForWedge(int wedgeIndex) {
+        double phi = -Math.PI + (2 * Math.PI) * wedgeIndex / NUM_WEDGES;
+        return wrapPhi(phi);
+    }
+
     private static double wrapPhi(double phi) {
         while (phi > Math.PI) phi -= 2 * Math.PI;
         while (phi < -Math.PI) phi += 2 * Math.PI;
         return phi;
-    }
-
-    private static double calculateBarTime(Bank bank, int rowIndex) {
-        double timeLeftPMT = bank.getInt("TDC", rowIndex) * TDC_RESOLUTION;
-        double timeRightPMT = bank.getInt("TDC", rowIndex + 1) * TDC_RESOLUTION;
-        return (timeLeftPMT + timeRightPMT) / 2;
-    }
-
-    private static int calculateBarIndex(Bank bank, int rowIndex) {
-        int sector = bank.getInt("sector", rowIndex);
-        int layer = bank.getInt("layer", rowIndex);
-        int component = bank.getInt("component", rowIndex);
-        return sector * 4 * 60 + layer * 60 + component;
     }
 
     private static void formClusters(List<EventData> eventsData, List<Cluster> clusters) {
@@ -373,9 +356,9 @@ public class ZAndPhiForBarsZPositionAndTimePlotter_TDC {
 
     private static boolean isWithinProximity(Cluster cluster, EventData event) {
         for (EventData clusterEvent : cluster.events) {
-            if (Math.abs(clusterEvent.zBar - event.zBar) < Z_THRESHOLD &&
-                    Math.abs(clusterEvent.phiBar - event.phiBar) < PHI_THRESHOLD &&
-                    Math.abs(clusterEvent.timeBar - event.timeBar) < TIME_THRESHOLD) {
+            if (Math.abs(clusterEvent.z - event.z) < Z_THRESHOLD &&
+                    Math.abs(clusterEvent.phi - event.phi) < PHI_THRESHOLD &&
+                    Math.abs(clusterEvent.time - event.time) < TIME_THRESHOLD) {
                 return true;
             }
         }
@@ -383,9 +366,3 @@ public class ZAndPhiForBarsZPositionAndTimePlotter_TDC {
     }
 }
 */
-
-
-
-
-
-

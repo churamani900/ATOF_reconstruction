@@ -215,10 +215,8 @@ public class ATOFHit_Reco_Cluster {
 }
 
 
-//TDC version of code 
-
+//TDC version of code
 /*
-
 package org.jlab.rec.atof.ML_INPUT_TDC;
 
 import org.jlab.jnp.hipo4.data.Bank;
@@ -238,6 +236,7 @@ public class ATOFHit_Reco_Cluster_TDC {
     private static final double Z_THRESHOLD = 280.0;
     private static final double PHI_THRESHOLD = 0.1; // radians
     private static final double TIME_THRESHOLD = 1.7;
+    private static final double TDC_RESOLUTION = 0.015625; // ns per TDC unit
 
     private static List<String[]> csvData = new ArrayList<>();
 
@@ -280,36 +279,33 @@ public class ATOFHit_Reco_Cluster_TDC {
             event.read(atofTdcBank);
 
             int numHits = atofTdcBank.getRows();
-            List<Hit> hits = new ArrayList<>();
+            List<Hit> barHits = new ArrayList<>();
+            List<Hit> wedgeHits = new ArrayList<>();
 
             System.out.printf("\nProcessing Event #%d with %d hits.\n", eventCount, numHits);
 
             for (int hitIndex = 0; hitIndex < numHits; hitIndex++) {
-                hits.add(createHit(atofTdcBank, hitIndex));
-            }
-
-            List<Hit> barHits = new ArrayList<>();
-            List<Hit> wedgeHits = new ArrayList<>();
-            for (Hit hit : hits) {
-                if (hit.getLayer() == 0) barHits.add(hit);
-                else if (hit.getLayer() >0 && hit.getLayer() <4) wedgeHits.add(hit);
-            }
-
-            if (barHits.isEmpty() && wedgeHits.isEmpty()) {
-                System.out.println("No valid bar or wedge hits in this event.");
-                eventCount++;
-                continue;
+                Hit hit = createHit(atofTdcBank, hitIndex);
+                if (hit.isBarHit()) {
+                    barHits.add(hit);
+                } else if (hit.isWedgeHit()) {
+                    wedgeHits.add(hit);
+                }
             }
 
             if (barHits.size() >= 2) {
-                Hit barLeft = barHits.get(0);
-                Hit barRight = barHits.get(1);
+                Hit barLeft = barHits.stream().filter(hit -> hit.getOrder() == 0).findFirst().orElse(null);
+                Hit barRight = barHits.stream().filter(hit -> hit.getOrder() == 1).findFirst().orElse(null);
 
-                double zBar = VEFF * (barLeft.getTime() - barRight.getTime()) / 2;
-                double tBar = Math.min(barLeft.getTime() - (zBar - BAR_LENGTH / 2) / VEFF,
-                        barRight.getTime() - (zBar + BAR_LENGTH / 2) / VEFF);
+                if (barLeft != null && barRight != null) {
+                    double zBar = VEFF * (barLeft.getTime() - barRight.getTime()) / 2;
+                    double tBar = Math.min(
+                            barLeft.getTime() - (zBar - BAR_LENGTH / 2) / VEFF,
+                            barRight.getTime() - (zBar + BAR_LENGTH / 2) / VEFF
+                    );
 
-                processCluster(barLeft, barRight, wedgeHits, zBar, tBar, eventCount);
+                    processCluster(barLeft, barRight, wedgeHits, zBar, tBar, eventCount);
+                }
             }
 
             eventCount++;
@@ -342,30 +338,22 @@ public class ATOFHit_Reco_Cluster_TDC {
             }
         }
 
-        csvData.add(new String[]{
-                String.valueOf(eventID),
-                String.valueOf(barLeft.getComponent()),
-                String.valueOf(clusterID),
-                "0.0",
-                "0.0",
-                "0.0",
-                String.valueOf(barLeft.getToT()),
-                String.format("%.2f", zBar),
-                String.format("%.2f", barLeft.getPhi()),
-                String.format("%.2f", barLeft.getTime())
-        });
+        addBarToClusterCSV(barLeft, zBar, tBar, eventID, clusterID);
+        addBarToClusterCSV(barRight, zBar, tBar, eventID, clusterID);
+    }
 
+    private static void addBarToClusterCSV(Hit bar, double zBar, double tBar, int eventID, int clusterID) {
         csvData.add(new String[]{
                 String.valueOf(eventID),
-                String.valueOf(barRight.getComponent()),
+                String.valueOf(bar.getComponent()),
                 String.valueOf(clusterID),
                 "0.0",
                 "0.0",
                 "0.0",
-                String.valueOf(barRight.getToT()),
+                String.valueOf(bar.getToT()),
                 String.format("%.2f", zBar),
-                String.format("%.2f", barRight.getPhi()),
-                String.format("%.2f", barRight.getTime())
+                String.format("%.2f", bar.getPhi()),
+                String.format("%.2f", bar.getTime())
         });
     }
 
@@ -376,9 +364,9 @@ public class ATOFHit_Reco_Cluster_TDC {
         int order = bank.getByte("order", index);
         int tdc = bank.getInt("TDC", index);
         int tot = bank.getInt("ToT", index);
-        double time = tdc * 0.015625; // Convert TDC to ns
+        double time = tdc * TDC_RESOLUTION;
         double phi = 2 * Math.PI * component / 60;
-        return new Hit(sector, layer, component, order, tdc, tot, time, phi);
+        return new Hit(sector, layer, component, order, time, phi, tot);
     }
 
     private static double normalizePhi(double phi) {
@@ -399,39 +387,41 @@ public class ATOFHit_Reco_Cluster_TDC {
     }
 
     static class Hit {
-        private int sector, layer, component, order, tdc, tot;
+        private int sector, layer, component, order, tot;
         private double time, phi;
 
-        Hit(int sector, int layer, int component, int order, int tdc, int tot, double time, double phi) {
+        Hit(int sector, int layer, int component, int order, double time, double phi, int tot) {
             this.sector = sector;
             this.layer = layer;
             this.component = component;
             this.order = order;
-            this.tdc = tdc;
-            this.tot = tot;
             this.time = time;
             this.phi = phi;
+            this.tot = tot;
+        }
+
+        boolean isBarHit() {
+            return component == 10;
+        }
+
+        boolean isWedgeHit() {
+            return component < 10;
         }
 
         public int getSector() { return sector; }
         public int getLayer() { return layer; }
         public int getComponent() { return component; }
         public int getOrder() { return order; }
-        public int getTdc() { return tdc; }
-        public int getToT() { return tot; }
         public double getTime() { return time; }
         public double getPhi() { return phi; }
+        public int getToT() { return tot; }
 
         double zWedge() {
-            int wedgeIndex = component % N_WEDGE;
-            return (wedgeIndex - (N_WEDGE - 1) / 2.0) * WEDGE_SPACING;
+            return (component % N_WEDGE - (N_WEDGE - 1) / 2.0) * WEDGE_SPACING;
         }
     }
 }
-
 */
-
-
 
 
 

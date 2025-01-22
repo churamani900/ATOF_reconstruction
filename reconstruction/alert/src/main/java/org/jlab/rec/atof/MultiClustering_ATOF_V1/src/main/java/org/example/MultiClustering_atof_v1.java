@@ -311,11 +311,11 @@ public class MultiClustering_atof_tdc {
             int tot = tdcBank.getInt("ToT", i);
             double time = tdc * 0.015625; // Convert TDC to time in ns
             double phi = -Math.PI + (2 * Math.PI * component) / NUM_BARS;
-            double z = (layer == 0) ? 0.0 : ((component % WEDGES_PER_BAR) - 4.5) * WEDGE_SPACING;
+            double z = (layer == 0 && component == 10) ? 0.0 : ((component % WEDGES_PER_BAR) - 4.5) * WEDGE_SPACING;
             Hit hit = new Hit(sector, layer, component, order, tdc, time, tot, z, phi);
 
-            if (layer == 0) barHits.add(hit);
-            else wedgeHits.add(hit);
+            if (hit.isBarHit()) barHits.add(hit);
+            else if (hit.isWedgeHit()) wedgeHits.add(hit);
         }
     }
 
@@ -325,7 +325,7 @@ public class MultiClustering_atof_tdc {
             for (int j = i + 1; j < barHits.size(); j++) {
                 Hit hit1 = barHits.get(i);
                 Hit hit2 = barHits.get(j);
-                if (hit1.component == hit2.component) {
+                if (hit1.isLeftPMT() && hit2.isRightPMT() && hit1.component == hit2.component) {
                     double zBar = (VEFF / 2.0) * (hit2.time - hit1.time);
                     double tMin = Math.min(hit1.time, hit2.time);
                     double energy = hit1.tdc + hit2.tdc; // Example calculation
@@ -378,10 +378,6 @@ public class MultiClustering_atof_tdc {
             System.out.printf("  Hit -> Sector: %d, Layer: %d, Component: %d, Order: %d, TDC: %d, Time: %.2f ns, ToT: %d, Z: %.2f mm, Phi: %.2f rad\n",
                     hit.sector, hit.layer, hit.component, hit.order, hit.tdc, hit.time, hit.tot, hit.z, hit.phi);
         }
-        if ("Bar + Wedge".equals(type)) {
-            System.out.printf("    Thresholds -> Delta Z: %.2f mm, Delta Phi: %.2f rad, Delta Time: %.2f ns\n",
-                    cluster.deltaZ, cluster.deltaPhi, cluster.deltaTime);
-        }
     }
 
     static class Hit {
@@ -399,6 +395,22 @@ public class MultiClustering_atof_tdc {
             this.z = z;
             this.phi = phi;
         }
+
+        boolean isBarHit() {
+            return component == 10;
+        }
+
+        boolean isWedgeHit() {
+            return component < 10;
+        }
+
+        boolean isLeftPMT() {
+            return isBarHit() && order == 0;
+        }
+
+        boolean isRightPMT() {
+            return isBarHit() && order == 1;
+        }
     }
 
     static class Cluster {
@@ -414,7 +426,5 @@ public class MultiClustering_atof_tdc {
         }
     }
 }
-
 */
-
 

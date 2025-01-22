@@ -162,11 +162,14 @@ public class ZAndPhiForBarsZPositionAndTimePlotter {
 
 /*
 
+//TDC version equivalent 
+
 package org.jlab.rec.atof.HITS_TDC_BANK_CLUSTERING;
 
 import org.jlab.jnp.hipo4.data.Bank;
 import org.jlab.jnp.hipo4.data.Event;
 import org.jlab.jnp.hipo4.io.HipoReader;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -230,8 +233,11 @@ public class ZAndPhiForBarsZPositionAndTimePlotter {
 
             for (int hitIndex = 0; hitIndex < numHits; hitIndex++) {
                 Hit hit = createHit(atofTdcBank, hitIndex);
-                if (hit.layer == 0) barHits.add(hit); // Bar hits
-                else if (hit.layer >0 && hit.layer <4) wedgeHits.add(hit); // Wedge hits
+                if (hit.component == 10) {
+                    barHits.add(hit); // Bar hits
+                } else if (hit.component < 10) {
+                    wedgeHits.add(hit); // Wedge hits
+                }
             }
         }
 
@@ -241,9 +247,7 @@ public class ZAndPhiForBarsZPositionAndTimePlotter {
             for (int j = i + 1; j < barHits.size(); j++) {
                 Hit barHit2 = barHits.get(j);
 
-                if (barHit1.sector == barHit2.sector &&
-                    barHit1.layer == barHit2.layer &&
-                    barHit1.component == barHit2.component) {
+                if (barHit1.order == 0 && barHit2.order == 1) {
 
                     double deltaT = barHit1.time - barHit2.time;
                     double zBar = VEFF * deltaT / 2;

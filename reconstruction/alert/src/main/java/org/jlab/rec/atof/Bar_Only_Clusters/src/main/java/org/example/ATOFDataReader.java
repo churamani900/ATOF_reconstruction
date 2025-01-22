@@ -163,8 +163,10 @@ public class ATOFDataReader {
 //equivanelt TDC version 
 
 package org.jlab.rec.atof.Bar_Only_Clusters;
+
 import org.jlab.jnp.hipo4.data.*;
 import org.jlab.jnp.hipo4.io.HipoReader;
+
 import java.util.*;
 
 public class ATOFDataReader {
@@ -188,7 +190,6 @@ public class ATOFDataReader {
 
         SchemaFactory schemaFactory = reader.getSchemaFactory();
         Bank tdcBank = new Bank(schemaFactory.getSchema("ATOF::tdc"));
-        Bank mcTrueBank = new Bank(schemaFactory.getSchema("MC::True"));
         Event event = new Event();
 
         int eventId = 0;
@@ -196,12 +197,7 @@ public class ATOFDataReader {
         while (reader.hasNext()) {
             reader.nextEvent(event);
             event.read(tdcBank);
-            event.read(mcTrueBank);
             eventId++;
-
-            List<Hit> truthBarHits = new ArrayList<>();
-            List<Hit> truthWedgeHits = new ArrayList<>();
-            extractTruthHits(mcTrueBank, truthBarHits, truthWedgeHits);
 
             List<Hit> barHits = new ArrayList<>();
             List<Hit> wedgeHits = new ArrayList<>();
@@ -209,64 +205,29 @@ public class ATOFDataReader {
 
             List<Hit> zBarHits = calculateZBar(barHits);
 
-            for (Hit truthBar : truthBarHits) {
-                for (Hit bar : zBarHits) {
-                    System.out.printf("Event %d - ZTruth: %.2f, ZBar: %.2f, Delta Z: %.2f\n", eventId, truthBar.z, bar.z, truthBar.z - bar.z);
-                }
-            }
-
-            for (Hit truthWedge : truthWedgeHits) {
-                for (Hit wedge : wedgeHits) {
-                    if (Math.abs(truthWedge.z - wedge.z) < Z_TOLERANCE) {
-                        System.out.printf("Event %d - ZTruth: %.2f, ZWedge: %.2f, Delta Z: %.2f\n", eventId, truthWedge.z, wedge.z, truthWedge.z - wedge.z);
-                    }
-                }
-            }
-
-            for (Hit bar : zBarHits) {
-                for (Hit wedge : wedgeHits) {
-                    if (Math.abs(bar.z - wedge.z) < Z_TOLERANCE) {
-                        System.out.printf("Event %d - ZBar: %.2f, ZWedge: %.2f\n", eventId, bar.z, wedge.z);
-                    }
-                }
-            }
-            printClusters(eventId, zBarHits, wedgeHits);
+            printBarHits(eventId, zBarHits);
+            printWedgeHits(eventId, wedgeHits);
         }
 
         reader.close();
         System.out.println("Processing Complete.");
     }
 
-    private static void extractTruthHits(Bank mcTrueBank, List<Hit> barTruthHits, List<Hit> wedgeTruthHits) {
-        for (int i = 0; i < mcTrueBank.getRows(); i++) {
-            int detector = mcTrueBank.getInt("detector", i);
-            int hitn = mcTrueBank.getInt("hitn", i);
-            float avgZ = mcTrueBank.getFloat("avgZ", i);
-            float avgT = mcTrueBank.getFloat("avgT", i);
-            float px = mcTrueBank.getFloat("px", i);
-            float py = mcTrueBank.getFloat("py", i);
-            float phi = (float) Math.atan2(py, px);
-
-            if (detector == 24) {
-                if (hitn == 1) barTruthHits.add(new Hit(avgZ, phi, avgT));
-                if (hitn == 2) wedgeTruthHits.add(new Hit(avgZ, phi, avgT));
-            }
-        }
-    }
-
     private static void extractTDCData(Bank tdcBank, List<Hit> barHits, List<Hit> wedgeHits) {
         for (int i = 0; i < tdcBank.getRows(); i++) {
-            int layer = tdcBank.getInt("layer", i);
             int component = tdcBank.getInt("component", i);
             int order = tdcBank.getInt("order", i);
             int tdc = tdcBank.getInt("TDC", i);
             float time = tdc * TDC_RESOLUTION;
 
-            if (layer == 0) barHits.add(new Hit(component, order, time));
-            if (layer >0 && layer <4) {
+            if (component < 10) {
+                // Wedge hits
                 float zWedge = calculateZWedge(component);
                 float phiWedge = calculatePhi(component);
                 wedgeHits.add(new Hit(zWedge, phiWedge, time));
+            } else if (component == 10) {
+                // Bar hits
+                barHits.add(new Hit(component, order, time));
             }
         }
     }
@@ -277,8 +238,11 @@ public class ATOFDataReader {
         List<Hit> zBarHits = new ArrayList<>();
 
         for (Hit hit : barHits) {
-            if (hit.order == 0) tLeft.put(hit.component, hit.time);
-            if (hit.order == 1) tRight.put(hit.component, hit.time);
+            if (hit.order == 0) {
+                tLeft.put(hit.component, hit.time); // Left PMT
+            } else if (hit.order == 1) {
+                tRight.put(hit.component, hit.time); // Right PMT
+            }
         }
 
         for (int component : tLeft.keySet()) {
@@ -300,10 +264,18 @@ public class ATOFDataReader {
         return (float) (2.0 * Math.PI * component / NUM_BARS);
     }
 
-    private static void printClusters(int eventId, List<Hit> bars, List<Hit> wedges) {
-        System.out.printf("Event %d:\n", eventId);
-        for (Hit bar : bars) System.out.printf("Bar: Z=%.2f, Phi=%.4f, Time=%.2f\n", bar.z, bar.phi, bar.time);
-        for (Hit wedge : wedges) System.out.printf("Wedge: Z=%.2f, Phi=%.4f, Time=%.2f\n", wedge.z, wedge.phi, wedge.time);
+    private static void printBarHits(int eventId, List<Hit> bars) {
+        System.out.printf("Event %d - Bar Hits:\n", eventId);
+        for (Hit bar : bars) {
+            System.out.printf("  Z: %.2f, Phi: %.4f, Time: %.2f\n", bar.z, bar.phi, bar.time);
+        }
+    }
+
+    private static void printWedgeHits(int eventId, List<Hit> wedges) {
+        System.out.printf("Event %d - Wedge Hits:\n", eventId);
+        for (Hit wedge : wedges) {
+            System.out.printf("  Z: %.2f, Phi: %.4f, Time: %.2f\n", wedge.z, wedge.phi, wedge.time);
+        }
     }
 
     static class Hit {

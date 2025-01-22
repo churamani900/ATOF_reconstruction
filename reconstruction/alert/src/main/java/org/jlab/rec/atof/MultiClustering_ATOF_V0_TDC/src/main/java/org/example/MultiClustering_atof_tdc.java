@@ -72,8 +72,8 @@ public class MultiClustering_atof_tdc {
                 System.out.printf("  Cluster ID: %d, Event ID: %d -> Z: %.2f mm, Phi: %.2f rad, Time: %.2f ns, Size: %d\n",
                         clusterId++, eventId, cluster.z, cluster.phi, cluster.time, cluster.hits.size());
                 for (Hit hit : cluster.hits) {
-                    String hitType = hit.layer == 0 ? "Bar" : "Wedge";
-                    double zValue = hit.layer == 0 ? cluster.z : hit.z;
+                    String hitType = hit.isBarHit() ? "Bar" : "Wedge";
+                    double zValue = hit.isBarHit() ? cluster.z : hit.z;
                     System.out.printf("    %s Hit ID: %d -> Sector: %d, Layer: %d, Component: %d, Order: %d, TDC: %d, ToT: %d, Z: %.2f mm, Phi: %.2f rad\n",
                             hitType, hit.id, hit.sector, hit.layer, hit.component, hit.order, hit.tdc, hit.tot, zValue, hit.phi);
                 }
@@ -93,13 +93,13 @@ public class MultiClustering_atof_tdc {
             int order = atofTdcBank.getByte("order", i);
             int tdc = atofTdcBank.getInt("TDC", i);
             int tot = atofTdcBank.getInt("ToT", i);
-            double phi = 2 * Math.PI * component / 60;
-            double z = (layer == 0) ? 0.0 : (component % N_WEDGE - (N_WEDGE - 1) / 2.0) * WEDGE_SPACING;
             double time = tdc * 0.015625; // Convert TDC to ns using the resolution
+            double phi = -Math.PI + (2 * Math.PI * component) / 60;
+            double z = (component < 10) ? ((component % N_WEDGE - (N_WEDGE - 1) / 2.0) * WEDGE_SPACING) : 0.0;
             Hit hit = new Hit(sector, layer, component, order, tdc, tot, time, z, phi);
 
-            if (layer == 0) barHits.add(hit);
-            else wedgeHits.add(hit);
+            if (hit.isBarHit()) barHits.add(hit);
+            else if (hit.isWedgeHit()) wedgeHits.add(hit);
         }
     }
 
@@ -109,7 +109,7 @@ public class MultiClustering_atof_tdc {
             for (int j = i + 1; j < barHits.size(); j++) {
                 Hit hit1 = barHits.get(i);
                 Hit hit2 = barHits.get(j);
-                if (hit1.component == hit2.component) {
+                if (hit1.isLeftPMT() && hit2.isRightPMT() && hit1.component == hit2.component) {
                     double zBar = VEFF * (hit1.time - hit2.time) / 2;
                     double tMin = Math.min(hit1.time, hit2.time);
                     Cluster cluster = new Cluster(zBar, hit1.phi, tMin);
@@ -159,6 +159,22 @@ public class MultiClustering_atof_tdc {
             this.z = z;
             this.phi = phi;
         }
+
+        boolean isBarHit() {
+            return component == 10;
+        }
+
+        boolean isWedgeHit() {
+            return component < 10;
+        }
+
+        boolean isLeftPMT() {
+            return isBarHit() && order == 0;
+        }
+
+        boolean isRightPMT() {
+            return isBarHit() && order == 1;
+        }
     }
 
     static class Cluster {
@@ -172,13 +188,6 @@ public class MultiClustering_atof_tdc {
         }
     }
 }
-
-
-
-
-
-
-
 
 
 

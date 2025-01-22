@@ -153,6 +153,7 @@ package org.jlab.rec.atof.BAR_WEDGE_CLUSTERING;
 import org.jlab.jnp.hipo4.data.Bank;
 import org.jlab.jnp.hipo4.data.Event;
 import org.jlab.jnp.hipo4.io.HipoReader;
+
 import java.util.*;
 
 public class ATOFHitRecoCluster {
@@ -214,43 +215,57 @@ public class ATOFHitRecoCluster {
 
             for (int hitIndex = 0; hitIndex < numHits; hitIndex++) {
                 Hit hit = createHit(atofTdcBank, hitIndex);
-                if (hit.layer == 0) barHits.add(hit);
-                else if (hit.layer >= 10 && hit.layer <= 19) wedgeHits.add(hit);
+
+                // Distinguish bar and wedge hits
+                if (hit.component == 10) {
+                    // Bar hit
+                    barHits.add(hit);
+                } else if (hit.component < 10) {
+                    // Wedge hit
+                    wedgeHits.add(hit);
+                }
             }
 
             if (barHits.size() >= 2) {
-                Hit barLeft = barHits.get(0);
-                Hit barRight = barHits.get(1);
+                Hit barLeft = null;
+                Hit barRight = null;
 
-                double zBar = VEFF * (barLeft.time - barRight.time) / 2;
-                double tBar = Math.min(barLeft.time - (zBar - BAR_LENGTH / 2) / VEFF, barRight.time - (zBar + BAR_LENGTH / 2) / VEFF);
-
-                System.out.printf("Bar Hits (for Cluster Calculation):\n");
-                printHitDetails(barLeft, "Bar Hit #1");
-                printHitDetails(barRight, "Bar Hit #2");
-                System.out.printf("  Calculated ZBar: %.2f mm, TBar: %.2f ns\n", zBar, tBar);
-
-                List<Hit> clusterWedgeHits = new ArrayList<>();
-                for (Hit wedgeHit : wedgeHits) {
-                    double deltaZ = Math.abs(zBar - wedgeHit.zWedge());
-                    double deltaPhi = Math.abs(barLeft.phi - wedgeHit.phi);
-                    double deltaTime = Math.abs(tBar - wedgeHit.time);
-
-                    deltaZList.add(deltaZ);
-                    deltaPhiList.add(deltaPhi);
-                    deltaTimeList.add(deltaTime);
-
-                    if (deltaZ < Z_THRESHOLD && deltaPhi < PHI_THRESHOLD && deltaTime < TIME_THRESHOLD) {
-                        clusterWedgeHits.add(wedgeHit);
-                    }
+                for (Hit barHit : barHits) {
+                    if (barHit.order == 0) barLeft = barHit; // Left PMT
+                    else if (barHit.order == 1) barRight = barHit; // Right PMT
                 }
 
-                if (!clusterWedgeHits.isEmpty()) {
-                    int clusterSize = 2 + clusterWedgeHits.size();
-                    clusterSizes.add(clusterSize);
-                    clusterSizeCounts.put(clusterSize, clusterSizeCounts.getOrDefault(clusterSize, 0) + 1);
+                if (barLeft != null && barRight != null) {
+                    double zBar = VEFF * (barRight.time - barLeft.time) / 2;
+                    double tBar = Math.min(barLeft.time - (zBar - BAR_LENGTH / 2) / VEFF, barRight.time - (zBar + BAR_LENGTH / 2) / VEFF);
 
-                    System.out.printf("Cluster Formed (Size: %d)\n", clusterSize);
+                    System.out.printf("Bar Hits (for Cluster Calculation):\n");
+                    printHitDetails(barLeft, "Bar Hit #1");
+                    printHitDetails(barRight, "Bar Hit #2");
+                    System.out.printf("  Calculated ZBar: %.2f mm, TBar: %.2f ns\n", zBar, tBar);
+
+                    List<Hit> clusterWedgeHits = new ArrayList<>();
+                    for (Hit wedgeHit : wedgeHits) {
+                        double deltaZ = Math.abs(zBar - wedgeHit.zWedge());
+                        double deltaPhi = Math.abs(barLeft.phi - wedgeHit.phi);
+                        double deltaTime = Math.abs(tBar - wedgeHit.time);
+
+                        deltaZList.add(deltaZ);
+                        deltaPhiList.add(deltaPhi);
+                        deltaTimeList.add(deltaTime);
+
+                        if (deltaZ < Z_THRESHOLD && deltaPhi < PHI_THRESHOLD && deltaTime < TIME_THRESHOLD) {
+                            clusterWedgeHits.add(wedgeHit);
+                        }
+                    }
+
+                    if (!clusterWedgeHits.isEmpty()) {
+                        int clusterSize = 2 + clusterWedgeHits.size();
+                        clusterSizes.add(clusterSize);
+                        clusterSizeCounts.put(clusterSize, clusterSizeCounts.getOrDefault(clusterSize, 0) + 1);
+
+                        System.out.printf("Cluster Formed (Size: %d)\n", clusterSize);
+                    }
                 }
             }
             eventCount++;
@@ -263,35 +278,31 @@ public class ATOFHitRecoCluster {
         int component = bank.getShort("component", index);
         int order = bank.getByte("order", index);
         int tdc = bank.getInt("TDC", index);
-        int tot = bank.getInt("ToT", index);
         double time = tdc * 0.015625; // Convert TDC to ns
-        double phi = 2 * Math.PI * component / 60;
-        return new Hit(sector, layer, component, order, tdc, tot, time, phi);
+        double phi = 2 * Math.PI * component / 60.0;
+        return new Hit(sector, layer, component, order, time, phi);
     }
 
     private static void printHitDetails(Hit hit, String label) {
-        System.out.printf("%s -> Sector: %d, Layer: %d, Component: %d, Order: %d, TDC: %d, ToT: %d, Time: %.2f ns, Phi: %.2f rad, Z: %.2f mm\n",
-                label, hit.sector, hit.layer, hit.component, hit.order, hit.tdc, hit.tot, hit.time, hit.phi, hit.zWedge());
+        System.out.printf("%s -> Sector: %d, Layer: %d, Component: %d, Order: %d, Time: %.2f ns, Phi: %.2f rad, Z: %.2f mm\n",
+                label, hit.sector, hit.layer, hit.component, hit.order, hit.time, hit.phi, hit.zWedge());
     }
 
     static class Hit {
-        int sector, layer, component, order, tdc, tot;
+        int sector, layer, component, order;
         double time, phi;
 
-        Hit(int sector, int layer, int component, int order, int tdc, int tot, double time, double phi) {
+        Hit(int sector, int layer, int component, int order, double time, double phi) {
             this.sector = sector;
             this.layer = layer;
             this.component = component;
             this.order = order;
-            this.tdc = tdc;
-            this.tot = tot;
             this.time = time;
             this.phi = phi;
         }
 
         double zWedge() {
-            int wedgeIndex = component % N_WEDGE;
-            return (wedgeIndex - (N_WEDGE - 1) / 2.0) * WEDGE_SPACING;
+            return (component % N_WEDGE - (N_WEDGE - 1) / 2.0) * WEDGE_SPACING;
         }
     }
 }

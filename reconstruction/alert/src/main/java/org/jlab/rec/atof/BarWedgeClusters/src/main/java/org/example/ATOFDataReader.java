@@ -183,14 +183,11 @@ public class ATOFDataReader {
 
 
 //tdc version 
-
 /*
 package org.jlab.rec.atof.BarWedgeClusters;
 
 import org.jlab.jnp.hipo4.data.Bank;
 import org.jlab.jnp.hipo4.data.Event;
-import org.jlab.jnp.hipo4.data.Schema;
-import org.jlab.jnp.hipo4.data.SchemaFactory;
 import org.jlab.jnp.hipo4.io.HipoReader;
 
 import java.util.*;
@@ -198,7 +195,7 @@ import java.util.stream.Collectors;
 
 public class ATOFTDCDataReader {
 
-    private static final float VEFF = 20.0f; // Effective speed of light in cm/ns
+    private static final float VEFF = 200.0f; // Effective speed of light in mm/ns
     private static final float WEDGE_SPACING = 3.0f; // mm
     private static final int WEDGES_PER_BAR = 10;
     private static final int NUM_BARS = 60;
@@ -221,18 +218,7 @@ public class ATOFTDCDataReader {
         HipoReader reader = new HipoReader();
         reader.open(inputHipoFile);
 
-        SchemaFactory schemaFactory = reader.getSchemaFactory();
-        try {
-            schemaFactory.readFile(schemaJsonFile);
-        } catch (Exception e) {
-            System.err.println("Error loading schema: " + e.getMessage());
-            System.exit(1);
-        }
-
-        Schema recSchema = schemaFactory.getSchema("ATOF::rec");
-        Bank tdcBank = new Bank(schemaFactory.getSchema("ATOF::tdc"));
-        Bank recBank = new Bank(recSchema);
-
+        Bank tdcBank = new Bank(reader.getSchemaFactory().getSchema("ATOF::tdc"));
         Event event = new Event();
 
         while (reader.hasNext()) {
@@ -248,8 +234,6 @@ public class ATOFTDCDataReader {
 
             List<Cluster> barWedgeClusters = clusterBarWedgeHits(barClusters, wedgeHits);
             barWedgeClusters.forEach(cluster -> System.out.printf("Bar+Wedge Cluster: Z=%.2f, Phi=%.2f, Hits=%d\n", cluster.z, cluster.phi, cluster.hits.size()));
-
-            storeClusters(recBank, barClusters, barWedgeClusters);
         }
 
         reader.close();
@@ -258,15 +242,17 @@ public class ATOFTDCDataReader {
 
     private static void extractHits(Bank tdcBank, List<Hit> barHits, List<Hit> wedgeHits) {
         for (int i = 0; i < tdcBank.getRows(); i++) {
-            int layer = tdcBank.getInt("layer", i);
             int component = tdcBank.getInt("component", i);
+            int order = tdcBank.getInt("order", i);
             int tdc = tdcBank.getInt("TDC", i);
             float time = tdc * TDC_RESOLUTION;
 
-            if (layer == 0) {
-                barHits.add(new Hit(layer, component, time));
-            } else if (layer >0 && layer <4) {
-                wedgeHits.add(new Hit(layer, component, time));
+            if (component == 10) {
+                // Bar hit identification
+                barHits.add(new Hit(component, order, time, true));
+            } else if (component < 10) {
+                // Wedge hit identification
+                wedgeHits.add(new Hit(component, order, time, false));
             }
         }
     }
@@ -300,43 +286,41 @@ public class ATOFTDCDataReader {
                 Math.abs(barCluster.minTime - wedge.time) < TIME_THRESHOLD;
     }
 
-    private static void storeClusters(Bank recBank, List<Cluster> barClusters, List<Cluster> barWedgeClusters) {
-        int clusterId = 0;
-        for (Cluster cluster : barClusters) {
-            storeCluster(recBank, clusterId++, cluster, "Bar");
-        }
-        for (Cluster cluster : barWedgeClusters) {
-            storeCluster(recBank, clusterId++, cluster, "Bar+Wedge");
-        }
-    }
-
-    private static void storeCluster(Bank recBank, int clusterId, Cluster cluster, String type) {
-        recBank.putShort("id", clusterId, (short) clusterId);
-        recBank.putShort("nhits", clusterId, (short) cluster.hits.size());
-        recBank.putFloat("z", clusterId, cluster.z);
-        recBank.putFloat("phi", clusterId, cluster.phi);
-        recBank.putFloat("time", clusterId, cluster.minTime);
-        System.out.printf("Stored Cluster [%s]: ID=%d, Hits=%d, Z=%.2f, Phi=%.2f, Time=%.2f\n",
-                type, clusterId, cluster.hits.size(), cluster.z, cluster.phi, cluster.minTime);
-    }
-
     static class Hit {
-        int layer, component;
+        int component, order;
         float time, z, phi;
+        boolean isBar; // true if Bar hit, false if Wedge hit
 
-        Hit(int layer, int component, float time) {
-            this.layer = layer;
+        Hit(int component, int order, float time, boolean isBar) {
             this.component = component;
+            this.order = order;
             this.time = time;
-            this.z = calculateZ(layer, time);
-            this.phi = calculatePhi(component);
+            this.isBar = isBar;
+
+            if (isBar) {
+                // Calculate Z and Phi for bar hits
+                this.z = calculateZBar(order, time);
+                this.phi = calculatePhiBar();
+            } else {
+                // Calculate Z and Phi for wedge hits
+                this.z = calculateZWedge();
+                this.phi = calculatePhiWedge();
+            }
         }
 
-        private float calculateZ(int layer, float time) {
-            return layer == 0 ? time * VEFF / 2.0f : (component - WEDGES_PER_BAR / 2.0f) * WEDGE_SPACING;
+        private float calculateZBar(int order, float time) {
+            return VEFF * (order == 1 ? time : -time) / 2;
         }
 
-        private float calculatePhi(int component) {
+        private float calculatePhiBar() {
+            return (2 * (float) Math.PI * component) / NUM_BARS;
+        }
+
+        private float calculateZWedge() {
+            return (component % WEDGES_PER_BAR - (WEDGES_PER_BAR - 1) / 2.0f) * WEDGE_SPACING;
+        }
+
+        private float calculatePhiWedge() {
             return (2 * (float) Math.PI * component) / NUM_BARS;
         }
     }
