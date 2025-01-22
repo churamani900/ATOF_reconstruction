@@ -104,8 +104,11 @@ public class MultiClustering_atof_tdc_v2 {
 
             Hit hit = new Hit(sector, layer, component, order, tdc, tot, time, z, phi);
 
-            if (hit.isBarHit()) barHits.add(hit);
-            else if (hit.isWedgeHit()) wedgeHits.add(hit);
+            if (hit.isBarHit()) {
+                barHits.add(hit);
+            } else if (hit.isWedgeHit()) {
+                wedgeHits.add(hit);
+            }
         }
     }
 
@@ -179,6 +182,14 @@ public class MultiClustering_atof_tdc_v2 {
             System.out.printf("  Hit -> Sector: %d, Layer: %d, Component: %d, Order: %d, TDC: %d, ToT: %d, Time: %.2f ns, %sPhi: %.2f rad\n",
                     hit.sector, hit.layer, hit.component, hit.order, hit.tdc, hit.tot, hit.time,
                     (hit.layer != 0 ? String.format("Z: %.2f mm, ", hit.z) : ""), hit.phi);
+        }
+    }
+
+    private static void printClusters(List<Cluster> clusters, String type) {
+        System.out.printf("\n%s Clusters (%d total):\n", type, clusters.size());
+        for (Cluster cluster : clusters) {
+            System.out.printf("  Cluster -> Z: %.2f, Phi: %.2f, Time: %.2f, Energy: %.2f, Hits: %d\n",
+                    cluster.z, cluster.phi, cluster.time, cluster.energy, cluster.hits.size());
         }
     }
 
@@ -494,6 +505,7 @@ public class MultiClustering_atof_tdc_v2 {
         }
     }
 }
-
-
 */
+
+
+
