@@ -1,7 +1,25 @@
+/**
+ * The {@code Hit} class represents a single detector hit in the ATOF reconstruction process.
+ *
+ * <p>Each hit encapsulates essential information about its location and signal, including:
+ * - {@code sector}: The sector of the detector where the hit was recorded.
+ * - {@code layer}: The detector layer (e.g., bar or wedge hit).
+ * - {@code component}: The specific detector component identifier.
+ * - {@code order}: Indicates whether the hit is from the inner or outer side of the bar.
+ * - {@code adc}: The amplitude of the signal in ADC units.
+ * - {@code time}: The timestamp of the hit.
+ * - {@code phi}: The azimuthal angle (in radians) of the hit.
+ * - {@code pedestal}: The pedestal value used for calibration.
+ *
+ * <p>This class provides methods to retrieve these attributes for further reconstruction
+ * and clustering analysis in the ATOF detector.</p>
+ *
+ * @author churaman 
+ * @version 1.0
+ */
+
+
 package org.jlab.rec.atof.BAR_WEDGE_CLUSTERING;
-
-//package org.example;
-
 public class Hit {
     private int sector;
     private int layer;

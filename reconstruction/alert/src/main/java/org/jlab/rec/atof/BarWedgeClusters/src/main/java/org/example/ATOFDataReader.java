@@ -1,3 +1,34 @@
+/**
+ * ATOFDataReader: Processes HIPO files for bar and wedge hit data in the ATOF detector.
+ *
+ * <p>This program handles:
+ * - Hit extraction from ADC or TDC data.
+ * - Clustering of hits based on spatial (Z, Phi) and temporal (Time) proximity.
+ * - Outputs cluster information and properties for further analysis.
+ * - Supports both ADC and TDC versions of the data.
+ *
+ * <p>Constants:
+ * - VEFF: Effective speed of light in the detector material (mm/ns).
+ * - BAR_LENGTH: Bar length in the ATOF detector (mm).
+ * - WEDGE_SPACING: Spacing between wedges (mm).
+ * - Z, Phi, and Time thresholds for clustering.
+ *
+ * <p>Usage:
+ * Run the program with the following command:
+ * {@code java ATOFDataReader <input.hipo> <output.hipo> <schema.json>}
+ * Where:
+ * - input.hipo: Path to the input HIPO file.
+ * - output.hipo: Path to the output HIPO file.
+ * - schema.json: Path to the schema JSON file.
+ *
+ * <p>Classes:
+ * - Hit: Represents individual detector hits.
+ * - Cluster: Represents a group of hits forming a cluster.
+ *
+ * @author churaman
+ * @version 1.0
+ */
+
 package org.jlab.rec.atof.BarWedgeClusters;
 
 import org.jlab.jnp.hipo4.data.Bank;

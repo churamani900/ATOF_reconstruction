@@ -1,3 +1,52 @@
+/**
+ * MultiClustering_atof_tdc.java
+ * 
+ * Description:
+ * This program performs multi-clustering for the ATOF detector using the `ATOF::tdc` bank. 
+ * The clustering involves:
+ * - Forming Bar-only clusters by pairing hits from left and right PMTs of the same bar.
+ * - Extending these clusters with Wedge hits based on proximity in Z, Phi, and Time dimensions.
+ * 
+ * Features:
+ * - Processes HIPO files containing hits in the `ATOF::tdc` bank.
+ * - Converts TDC values to nanoseconds using a resolution factor.
+ * - Configurable thresholds for clustering based on Z, Phi, and Time.
+ * - Outputs detailed information about hits and clusters for debugging and analysis.
+ * 
+ * @author churaman
+ * Date: January 24, 2025
+ * 
+ * Parameters:
+ * - Effective velocity (VEFF): 200.0 mm/ns
+ * - Bar length: 280.0 mm
+ * - Wedge spacing: 30.0 mm
+ * - Number of wedges per bar: 10
+ * - Clustering thresholds:
+ *   - Z threshold: 200.0 mm
+ *   - Phi threshold: 0.2 radians
+ *   - Time threshold: 2.5 ns
+ * 
+ * Usage:
+ * java MultiClustering_atof_tdc <path_to_hipo_file>
+ * 
+ * Input:
+ * - HIPO file containing the `ATOF::tdc` bank with fields:
+ *   - sector, layer, component, order, TDC, ToT
+ * 
+ * Output:
+ * - Console output of clusters formed:
+ *   - Bar-only clusters with Z, Phi, Time, and hit details.
+ *   - Bar + Wedge clusters with Z, Phi, Time, and hit details.
+ * 
+ * Notes:
+ * - Ensure the input HIPO file contains the `ATOF::tdc` schema.
+ * - Modify VEFF and threshold parameters as needed for calibration.
+ * 
+ * Contact:
+ * - Email: cpaudel@nmsu.edu
+ */
+
+
 package org.jlab.rec.atof.MultiClustering_ATOF_V0_TDC;
 
 import org.jlab.jnp.hipo4.data.Bank;

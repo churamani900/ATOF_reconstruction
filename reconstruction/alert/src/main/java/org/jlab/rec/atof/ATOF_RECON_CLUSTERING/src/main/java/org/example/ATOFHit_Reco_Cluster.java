@@ -1,3 +1,20 @@
+/**
+ * The {@code ATOFHit_Reco_Cluster} class handles the reconstruction and clustering
+ * of hits in the ATOF detector. It reads raw hit data from HIPO files, calculates
+ * hit properties (Z, Phi, Time), and forms clusters based on spatial and temporal
+ * proximity thresholds.
+ *
+ * <p>Key features:
+ * - Processes bar and wedge hits separately.
+ * - Performs clustering based on Z, Phi, and Time differences.
+ * - Outputs cluster statistics and hit details for analysis.
+ *
+ * <p>This implementation supports both ADC and TDC versions for reconstruction.</p>
+ *
+ * @author churaman
+ * @version 1.0
+ */
+
 package org.jlab.rec.atof.ATOF_RECON_CLUSTERING;
 import org.jlab.jnp.hipo4.data.Bank;
 import org.jlab.jnp.hipo4.data.Event;

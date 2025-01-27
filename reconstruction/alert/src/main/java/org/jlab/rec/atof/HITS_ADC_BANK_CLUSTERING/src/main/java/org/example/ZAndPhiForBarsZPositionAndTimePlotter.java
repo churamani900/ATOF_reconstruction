@@ -1,3 +1,13 @@
+/**
+ * ZAndPhiForBarsZPositionAndTimePlotter
+ * 
+ * Processes bar and wedge hits from the ATOF detector, forms clusters, and outputs cluster details.
+ * 
+ * @author churaman
+ * @version 1.0
+ */
+
+
 package org.jlab.rec.atof.HITS_ADC_BANK_CLUSTERING;
 import org.jlab.jnp.hipo4.data.Bank;
 import org.jlab.jnp.hipo4.data.Event;

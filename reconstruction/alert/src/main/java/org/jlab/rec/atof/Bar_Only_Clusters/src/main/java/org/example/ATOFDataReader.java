@@ -1,3 +1,18 @@
+/**
+ * The {@code ATOFDataReader} class processes data from the ATOF detector.
+ *
+ * <p>This program focuses on bar-only clusters, extracting hits, calculating Z positions,
+ * and printing results for further analysis.</p>
+ *
+ * <p>Key Features:
+ * - Processes both ADC and TDC data for bar and wedge hits.
+ * - Calculates Z positions for bars using PMT timing differences.
+ * - Logs detailed event and cluster information.</p>
+ *
+ * @author churaman
+ * @version 1.0
+ */
+
 package org.jlab.rec.atof.Bar_Only_Clusters;
 import org.jlab.jnp.hipo4.data.*;
 import org.jlab.jnp.hipo4.io.HipoReader;

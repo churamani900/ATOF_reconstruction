@@ -1,3 +1,25 @@
+/**
+ * ATOFHit_Reco_Cluster
+ * 
+ * Processes bar and wedge hits from the ATOF detector, forms clusters based on 
+ * proximity in Z, Phi, and Time dimensions, and outputs clustering details in a CSV file. 
+ * 
+ * This program supports data processing from the ATOF::adc and MC::True banks 
+ * and is designed to facilitate machine learning applications by generating structured input data.
+ * 
+ * @author churaman
+ * @version 1.0
+ * 
+ * Usage:
+ * java ATOFHit_Reco_Cluster <hipoFilePath> <outputCSVFile>
+ * 
+ * Input:
+ * - HIPO file containing ATOF::adc or ATOF::tdc  and MC::True data.
+ * 
+ * Output:
+ * - CSV file with clustering details including DeltaZ, DeltaPhi, DeltaTime, ADC, ZPosition, Phi, and Time.
+ */
+
 package org.jlab.rec.atof.ML_INPUT;
 import org.jlab.jnp.hipo4.data.Bank;
 import org.jlab.jnp.hipo4.data.Event;

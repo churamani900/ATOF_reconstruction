@@ -1,3 +1,21 @@
+/**
+ * The {@code ATOFDataReader} class processes detector hit data from the ATOF::adc bank,
+ * reconstructs clusters, and writes the reconstructed data to the ATOF::rec bank.
+ *
+ * <p>This class uses spatial and temporal thresholds to group hits into clusters,
+ * computes cluster properties, and outputs the results for further analysis.</p>
+ *
+ * <p>Key features:
+ * - Reads raw hit data from HIPO files.
+ * - Calculates Z and phi positions, time, and other properties for each hit.
+ * - Groups hits into clusters based on proximity thresholds.
+ * - Outputs reconstructed cluster data to the ATOF::rec bank.</p>
+ *
+ * @author churaman
+ * @version 1.0
+ */
+
+
 package org.jlab.rec.atof.ATOF_RECON_CLUSTER_BANK;
 import org.jlab.jnp.hipo4.data.Bank;
 import org.jlab.jnp.hipo4.data.Event;

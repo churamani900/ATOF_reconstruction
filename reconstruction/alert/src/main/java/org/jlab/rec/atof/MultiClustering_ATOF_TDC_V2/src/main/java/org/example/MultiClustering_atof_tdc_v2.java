@@ -1,3 +1,33 @@
+
+/**
+ * MultiClustering_atof_tdc_v2.java
+ * 
+ * Description:
+ * This program performs multi-stage clustering of hits in the ATOF detector using TDC bank data. 
+ * Clustering involves:
+ * 1. Forming Bar-only clusters from left and right PMTs of a bar.
+ * 2. Extending Bar-only clusters by associating Wedge hits based on spatial and temporal thresholds.
+ * 
+ * @author churaman
+ 
+ * Features:
+ * - Hit extraction and classification into Bar and Wedge hits.
+ * - Bar-only clustering by pairing left and right PMTs.
+ * - Bar+Wedge clustering based on Z, phi, and time thresholds.
+ * - Detailed logging of hits and clusters.
+ * - Output stored in the `ATOF::rec` bank in a new HIPO file.
+ * 
+ * Usage:
+ * java MultiClustering_atof_tdc_v2 <input.hipo> <output.hipo> <schema.json>
+ * 
+ * Input:
+ * - HIPO file containing `ATOF::tdc` bank data.
+ * - Schema file defining the structure of the `ATOF::rec` bank.
+ * 
+ * Output:
+ * - HIPO file with clustered data stored in the `ATOF::rec` bank.
+ */
+
 package org.jlab.rec.atof.MultiClustering_ATOF_TDC_V2;
 
 import org.jlab.jnp.hipo4.data.Bank;

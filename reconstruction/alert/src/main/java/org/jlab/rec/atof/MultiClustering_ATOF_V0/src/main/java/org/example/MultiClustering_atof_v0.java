@@ -1,4 +1,46 @@
-// This is the multi-clustering effort using ATOF::adc bank
+/**
+ * MultiClustering_atof_v0.java
+ * 
+ * Description:
+ * This program implements a multi-clustering algorithm for the ATOF detector
+ * using the `ATOF::adc` bank. The clustering process involves:
+ * - Forming Bar-only clusters by pairing left and right PMTs of a bar.
+ * - Extending these clusters with Wedge hits based on spatial and temporal proximity.
+ * 
+ * Features:
+ * - Processes HIPO files containing `ATOF::adc` data.
+ * - Clustering thresholds for Z, phi, and time.
+ * - Detailed logging of hits and clusters for analysis and debugging.
+ * 
+ * Author: Churamani Paudel
+ * Date: January 24, 2025
+ * 
+ * Parameters:
+ * - Effective velocity (VEFF): 200.0 mm/ns
+ * - Bar length: 280.0 mm
+ * - Wedge spacing: 30.0 mm
+ * - Number of wedges per bar: 10
+ * - Clustering thresholds:
+ *   - Z threshold: 200.0 mm
+ *   - Phi threshold: 0.2 radians
+ *   - Time threshold: 2.5 ns
+ * 
+ * Usage:
+ * java MultiClustering_atof_v0 <path_to_hipo_file>
+ * 
+ * Input:
+ * - HIPO file containing hits in the `ATOF::adc` bank.
+ * 
+ * Output:
+ * - Clusters of Bar-only and Bar+Wedge hits with their properties printed to the console.
+ * 
+ * Notes:
+ * - Ensure that the input HIPO file contains the `ATOF::adc` schema.
+ * - Modify clustering thresholds as needed to match detector calibration.
+ * 
+ * Contact:
+ * - Email: cpaudel@nmsu.edu
+ */
 
 package org.jlab.rec.atof.MultiClustering_ATOF_V0;
 

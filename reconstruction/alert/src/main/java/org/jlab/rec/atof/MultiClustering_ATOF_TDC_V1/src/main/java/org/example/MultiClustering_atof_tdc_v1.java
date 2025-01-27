@@ -1,3 +1,32 @@
+/**
+ * MultiClustering_atof_tdc_v1
+ *
+ * @author churaman 
+ * Description:
+ * This program performs multi-dimensional clustering for the ATOF detector 
+ * using data from the TDC bank (ATOF::tdc). It identifies bar and wedge hits,
+ * forms clusters based on proximity in Z, Phi, and time dimensions, and 
+ * outputs the results into a new HIPO file.
+ *
+ * Input:
+ * - HIPO file containing ATOF::tdc data.
+ * - Schema JSON file for ATOF::rec.
+ *
+ * Output:
+ * - New HIPO file with reconstructed clusters (ATOF::rec).
+ *
+ * Usage:
+ *   java MultiClustering_atof_tdc_v1 <input.hipo> <output.hipo> <schema.json>
+ *
+ * Example:
+ *   java MultiClustering_atof_tdc_v1 input.hipo output.hipo schema.json
+ *
+ * Dependencies:
+ * - JNP HIPO library for reading and writing HIPO files.
+ * - Schema definitions for ATOF::tdc and ATOF::rec.
+ */
+
+
 package org.jlab.rec.atof.MultiClustering_ATOF_TDC_V1;
 
 import org.jlab.jnp.hipo4.data.Bank;

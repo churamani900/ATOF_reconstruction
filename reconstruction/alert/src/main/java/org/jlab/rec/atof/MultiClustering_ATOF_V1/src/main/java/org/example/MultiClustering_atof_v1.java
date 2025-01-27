@@ -1,4 +1,49 @@
-//This performs multiclustering, pushes cluster output to ATOF::rec bank, bank is created and output is pushed there!!
+/**
+ * MultiClustering_atof_v1.java
+ * 
+ * Description:
+ * This program implements the multi-clustering algorithm for the ATOF detector system. 
+ * It processes hits from the ATOF::adc bank and forms clusters based on spatial, angular, 
+ * and temporal proximity. The output clusters are stored in the ATOF::rec bank, which is 
+ * dynamically created and saved into an output HIPO file.
+ * 
+ * Features:
+ * - Reads input HIPO files containing the ATOF::adc bank.
+ * - Extracts bar and wedge hits for clustering.
+ * - Forms bar-only clusters and bar+wedge clusters using proximity thresholds for:
+ *   - Delta Z (spatial difference along the Z-axis).
+ *   - Delta Phi (angular difference in azimuth).
+ *   - Delta Time (temporal difference between hits).
+ * - Outputs cluster data, including position, time, and energy, to the ATOF::rec bank.
+ * - Supports schema management with external schema JSON files.
+ * 
+ * Author Information:
+ * - **Name**: Churamani Paudel
+ * - **Institution**: New Mexico State University
+ * - **Contributions**: Development of multi-clustering algorithms and integration with ATOF::rec banks 
+ *   for advanced hit and cluster analysis in the ATOF detector system.
+ * - **Contact Email**: cpaudel@nmsu.edu
+ * 
+ * Date: January 24, 2025
+ * 
+ * Parameters:
+ * - `Z_THRESHOLD`: Maximum Z-axis difference for clustering (200.0 mm).
+ * - `PHI_THRESHOLD`: Maximum azimuthal angle difference for clustering (0.2 radians).
+ * - `TIME_THRESHOLD`: Maximum time difference for clustering (2.5 ns).
+ * - `VEFF`: Effective velocity used in timing-based Z calculations (200 mm/ns).
+ * - `NUM_BARS`: Number of scintillator bars in the detector (60).
+ * - `WEDGES_PER_BAR`: Number of wedges per bar (10).
+ * - `WEDGE_SPACING`: Spacing between adjacent wedges (30.0 mm).
+ * 
+ * Usage:
+ * - Run the program with the following arguments:
+ *   `java MultiClustering_atof_v1 <input.hipo> <output.hipo> <schema.json>`
+ * - Ensure the input HIPO file contains the ATOF::adc bank, and the schema JSON file defines the ATOF::rec bank.
+ * - Outputs the processed clusters to the specified output HIPO file.
+ * Notes:
+ * - The code supports both ATOF::adc and ATOF::tdc versions with minor modifications for flexibility.
+ * - Provides detailed cluster statistics and debugging output for analysis.
+ */
 
 package org.jlab.rec.atof.MultiClustering_ATOF_V1;
 import org.jlab.jnp.hipo4.data.Bank;

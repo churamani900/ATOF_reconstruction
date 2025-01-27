@@ -1,3 +1,22 @@
+/**
+ * This class is responsible for processing ATOF reconstruction data by calculating 
+ * Z and Phi positions for bars and wedges, and analyzing Z position and time 
+ * properties to form clusters based on proximity criteria.
+ *
+ * <p>It processes hits from HIPO files, extracts spatial and temporal information, 
+ * and groups events into clusters if they meet the defined thresholds for Z, Phi, and time.
+ * The TDC version of the code handles timing information at a finer resolution.</p>
+ *
+ * <p>Key functionalities include:
+ * - Extracting hit information from HIPO files (ATOF::adc and ATOF::tdc schemas).
+ * - Calculating Z and Phi positions for bars and wedges.
+ * - Forming clusters of events based on proximity in Z, Phi, and time dimensions.
+ * - Printing and validating the resulting clusters.</p>
+ *
+ * @author Churaman
+ * @version 1.0
+ */
+
 package org.jlab.rec.atof.ATOF_RECON;
 import org.jlab.jnp.hipo4.data.Bank;
 import org.jlab.jnp.hipo4.data.Event;

@@ -1,3 +1,46 @@
+/**
+ * ATOFHit_Reco_Cluster.java
+ * 
+ * Description:
+ * This program is part of the residuals calculation and clustering efforts for the ATOF detector system. 
+ * It processes hit data from the ATOF::adc and MC::True banks in HIPO files, calculates residuals, 
+ * and forms clusters by combining bar and wedge hits based on spatial, temporal, and angular proximity.
+ * 
+ * Features:
+ * - Reads HIPO files containing ATOF::adc and MC::True data.
+ * - Processes bar and wedge hits to form clusters based on configurable thresholds for:
+ *   - Delta Z (position difference along Z-axis)
+ *   - Delta Phi (azimuthal angle difference)
+ *   - Delta Time (time difference between hits)
+ * - Calculates weighted averages for Z, Phi, and Time for clusters.
+ * - Computes residuals between reconstructed and true hit positions, angles, and times.
+ * - Generates cluster size statistics and outputs detailed per-cluster information.
+ * 
+ * @author churaman
+ * Date: January 24, 2025
+ * 
+ * Parameters:
+ * - `VEFF`: Effective velocity for timing-based Z calculation (200 mm/ns).
+ * - `BAR_LENGTH`: Length of the scintillator bar (280 mm).
+ * - `WEDGE_SPACING`: Spacing between wedges (3 mm).
+ * - `N_WEDGE`: Number of wedges per bar (10).
+ * - `Z_THRESHOLD`: Maximum allowed Z difference for clustering (280 mm).
+ * - `PHI_THRESHOLD`: Maximum allowed azimuthal angle difference for clustering (0.1 radians).
+ * - `TIME_THRESHOLD`: Maximum allowed time difference for clustering (1.7 ns).
+ * 
+ * Usage:
+ * - Run the program with a HIPO file as input:
+ *   `java ATOFHit_Reco_Cluster <path_to_hipo_file>`
+ * - Ensure the HIPO file contains the required schemas: ATOF::adc and MC::True.
+ * 
+ * Contact:
+ * - Email: cpaudel@nmsu.edu
+ * Notes:
+ * - The program supports both ATOF::adc and ATOF::tdc versions for flexibility in input formats.
+ * - Output includes detailed residuals and clustering information for debugging and analysis purposes.
+ */
+
+
 package org.jlab.rec.atof.RESIDUALS_CALCULATIONS;
 
 import org.jlab.jnp.hipo4.data.Bank;

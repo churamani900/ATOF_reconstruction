@@ -1,3 +1,28 @@
+/**
+ * ATOFHit_Reco_Cluster: A program for reconstructing and clustering hits in the 
+ * ATOF detector using bar and wedge hit data from HIPO files.
+ *
+ * <p>This program supports both ADC and TDC input schemas for clustering
+ * and calculates key parameters such as ZBar, TBar, and deltas for Z, Phi, and Time.
+ *
+ * <p>Key Features:
+ * - Processes bar and wedge hits.
+ * - Forms clusters based on spatial and temporal proximity.
+ * - Outputs cluster statistics for analysis.
+ *
+ * <p>Constants:
+ * - VEFF: Effective velocity of light in the detector material (mm/ns).
+ * - BAR_LENGTH: Length of the bar (mm).
+ * - WEDGE_SPACING: Spacing between wedges (mm).
+ * - Thresholds for Z, Phi, and Time differences.
+ *
+ * <p>Usage:
+ * Run the program with the path to the HIPO file as an argument:
+ * {@code java ATOFHit_Reco_Cluster <input.hipo>}
+ *
+ * @author churaman
+ * @version 1.0
+ */
 package org.jlab.rec.atof.BAR_WEDGE_CLUSTERING;
 import org.jlab.jnp.hipo4.data.Bank;
 import org.jlab.jnp.hipo4.data.Event;

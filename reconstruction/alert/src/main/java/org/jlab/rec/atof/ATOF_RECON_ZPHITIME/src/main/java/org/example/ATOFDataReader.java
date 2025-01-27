@@ -1,3 +1,22 @@
+/**
+ * The {@code ATOFDataReader} class processes ATOF detector data from HIPO files.
+ *
+ * <p>This program extracts hits for bars and wedges, calculates derived quantities
+ * such as Z positions and phi angles, and forms clusters of hits based on spatial
+ * and temporal tolerances. The output includes detailed cluster properties for
+ * debugging and analysis.</p>
+ *
+ * <p>Key features:
+ * - Reads ADC or TDC data from HIPO files.
+ * - Matches hits with truth data for validation.
+ * - Calculates Z, phi, and time properties for bars and wedges.
+ * - Forms clusters of hits based on proximity in Z, phi, and time.</p>
+ *
+ * @author churaman 
+ * @version 1.0
+ */
+
+
 package org.jlab.rec.atof.ATOF_RECON_ZPHITIME;
 import org.jlab.jnp.hipo4.data.*;
 import org.jlab.jnp.hipo4.io.HipoReader;
